@@ -6,11 +6,17 @@ PWMServo ESC;     // create servo object to control the ESC
 boolean calibrated = false;
 
 void calibrateESC(){
-  ESC.attach(23,1000,2000); // (pin, min pulse width, max pulse width in microseconds) 
+  ESC.attach(23, 1000, 2000); // (pin, min pulse width, max pulse width in microseconds) 
 
+  Serial.println("90");
+  ESC.write(90);
+  delay(2000);
+  
   Serial.println("180");
   ESC.write(180);
-  delay(3000);
+  digitalWrite(13, HIGH);
+  delay(6000);
+  digitalWrite(13, LOW);
   
   Serial.println("0");
   ESC.write(0);
@@ -22,43 +28,45 @@ void calibrateESC(){
 }
 
 void setup() {
+  pinMode(8, INPUT_PULLUP);
+  pinMode(11, INPUT_PULLUP);
   Serial.begin(9600);
+
+  delay(500);
 }
 
-int power = 90;
-boolean isIncreasing = true;
+int dir = 1;
+int pos = 90;
 
 void loop() {
   if(!calibrated){
-    if(digitalRead(21) == HIGH && !calibrated){
-      calibrateESC();
-      calibrated = true;
-    }
+    calibrateESC();
+    calibrated = true;
     delay(100);
   }else{
 
-//    if(isIncreasing){
-//      power += 1;
-//    }else{
-//      power -= 1;
-//    }
-//  
-//    if(power >= 135){
-//      isIncreasing = false;
-//    }else if(power <= 45){
-//      isIncreasing = true;
-//    }
-//    
-//    Serial.println(power);
-//    ESC.write(power);
-//    delay(20);
+//      pos += dir;
+//      if(pos == 0 || pos == 180){
+//        dir *= -1;
+//      }
+//      ESC.write(pos);
+//      Serial.println(pos);
 
-    ESC.write(135);
-    delay(500);
-    ESC.write(90);
-    delay(500);
-    ESC.write(45);
-    delay(500);
+    if(!digitalRead(8)){
+      ESC.write(170);
+      Serial.println(170);
+    }else if(!digitalRead(11)){
+      ESC.write(10);
+      Serial.println(10);
+    }else{
+      ESC.write(90);
+      Serial.println(90);
+    }
+
+
+    
   }
+
+  delay(100);
   
 }
