@@ -6,11 +6,11 @@ PWMServo ESC;     // create servo object to control the ESC
 boolean calibrated = false;
 
 void calibrateESC(){
-  ESC.attach(23, 1000, 2000); // (pin, min pulse width, max pulse width in microseconds) 
+  ESC.attach(8, 1000, 2000); // (pin, min pulse width, max pulse width in microseconds) 
 
-  Serial.println("90");
-  ESC.write(90);
-  delay(2000);
+//  Serial.println("90");
+//  ESC.write(90);
+//  delay(2000);
   
   Serial.println("180");
   ESC.write(180);
@@ -28,8 +28,8 @@ void calibrateESC(){
 }
 
 void setup() {
-  pinMode(8, INPUT_PULLUP);
-  pinMode(11, INPUT_PULLUP);
+//  pinMode(8, INPUT_PULLUP);
+//  pinMode(11, INPUT_PULLUP);
   Serial.begin(9600);
 
   delay(500);
@@ -45,23 +45,23 @@ void loop() {
     delay(100);
   }else{
 
-//      pos += dir;
-//      if(pos == 0 || pos == 180){
-//        dir *= -1;
-//      }
-//      ESC.write(pos);
-//      Serial.println(pos);
+      pos += dir;
+      if(pos == 0 || pos == 180){
+        dir *= -1;
+      }
+      ESC.write(pos);
+      Serial.println(pos);
 
-    if(!digitalRead(8)){
-      ESC.write(170);
-      Serial.println(170);
-    }else if(!digitalRead(11)){
-      ESC.write(10);
-      Serial.println(10);
-    }else{
-      ESC.write(90);
-      Serial.println(90);
-    }
+//    if(!digitalRead(8)){
+//      ESC.write(170);
+//      Serial.println(170);
+//    }else if(!digitalRead(11)){
+//      ESC.write(10);
+//      Serial.println(10);
+//    }else{
+//      ESC.write(90);
+//      Serial.println(90);
+//    }
 
 
     
