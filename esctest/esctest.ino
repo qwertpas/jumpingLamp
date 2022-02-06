@@ -6,7 +6,6 @@ PWMServo ESC;     // create servo object to control the ESC
 boolean calibrated = false;
 
 void calibrateESC(){
-  ESC.attach(8, 1000, 2000); // (pin, min pulse width, max pulse width in microseconds) 
 
 //  Serial.println("90");
 //  ESC.write(90);
@@ -32,7 +31,10 @@ void setup() {
 //  pinMode(11, INPUT_PULLUP);
   Serial.begin(9600);
 
-  delay(500);
+  ESC.attach(11, 1000, 2000); // (pin, min pulse width, max pulse width in microseconds) 
+  ESC.write(90);
+
+  delay(2000);
 }
 
 int dir = 1;
@@ -40,7 +42,7 @@ int pos = 90;
 
 void loop() {
   if(!calibrated){
-    calibrateESC();
+//    calibrateESC();
     calibrated = true;
     delay(100);
   }else{

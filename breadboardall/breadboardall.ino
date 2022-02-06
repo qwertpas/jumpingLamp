@@ -38,10 +38,16 @@ int16_t ax,ay,az,tmp,gx,gy,gz;
 float AccelX,AccelY,AccelZ,GyroX,GyroY,GyroZ;
 float mixX, mixY, mixYa;
 
-Motor motor = Motor(12, 11, 9);
+Motor motor = Motor(7, 8, 9);
 PWMServo servo;
+PWMServo esc;
+//esc pwm port is 11
+
+boolean isJumping = false;
+boolean isPressed20 = false;
 
 float targetAng = -39;
+int servoPos = 90;
 
 
 void setup() {
@@ -49,16 +55,16 @@ void setup() {
   
   pinMode(23, INPUT_PULLUP);
   pinMode(20, INPUT_PULLUP);
-  pinMode(22, OUTPUT);
-  digitalWrite(22, LOW);
   
-  servo.attach(8, 500, 2500);
+  servo.attach(12, 500, 2500);
+  esc.attach(11, 1000, 2000);
 
   Wire.begin(); //gyro setup
   Wire.beginTransmission(MPU_addr);
   Wire.write(0x6B);  // PWR_MGMT_1 register
   Wire.write(0);     // set to zero (wakes up the MPU-6050)
   Wire.endTransmission(true);
+
 }
 
 unsigned long currentMillis;
@@ -106,61 +112,64 @@ void loop() {
 //    Serial.print(",");
     Serial.print(mixX, 2);      // pitch 
     Serial.print("\t");
-    Serial.print(targetAng, 2);      // pitch 
+    Serial.print(targetAng, 2);
     Serial.println("\t");
 
     
-//    Serial.println(AccelX, 2);      // pitch 
-
-
-//    if(isIncreasing){
-//      power += 0.01;
-//    }else{
-//      power -= 0.01;
-//    }
-//  
-//    if(power >= 0.5){
-//      isIncreasing = false;
-//    }else if(power <= -0.5){
-//      isIncreasing = true;
-//    }
     float error = (mixX - targetAng);
 
-    if(error > 0.2){
-      power = error * (1/10.0) + 0.4;
+    if(error > 0.5){
+      power += error * (1/20.0) + 0.4;
     }else if(error < -0.5){
-      power = error * (1/10.0) - 0.4;
+      power += error * (1/20.0) - 0.4;
     }else{
-      power = 0;
+      power += 0;
     }
 
     if(abs(error) > 2){
-      power = 0;
+      power += 0;
     }
+
+    if(power > 1) power = 1;
+    if(power < -1) power = -1;
   
     if(!digitalRead(23)){
 
       targetAng = mixX;
-      
-//      servo.write(0);
-      Serial.println(0);
   
-      digitalWrite(13, HIGH);
+      digitalWrite(13, LOW);
     }
     if(!digitalRead(20)){
-      servo.write(180);
-      Serial.println(180);
+
+      if(!isPressed20){
+        isJumping = !isJumping;
+        Serial.println("toggle jumping");
+      }
   
-      digitalWrite(13, HIGH);
-  
+      digitalWrite(13, LOW);
+      isPressed20 = true;
+    }else{
+      isPressed20 = false;
     }
     if(digitalRead(23) && digitalRead(20)){
-      digitalWrite(13, LOW);
-      servo.write(0);
+      digitalWrite(13, HIGH);
     }
 
+    if(isJumping){
+      if(currentMillis % 500 < 250){
+        servoPos = 180;
+      }else{
+        servoPos = 90;
+      }
+
+      esc.write(45);
+    }else{
+      esc.write(135);
+    }
+
+
     motor.setPower(power);
-  
+    servo.write(servoPos);
 //    Serial.println(power);
 
     
