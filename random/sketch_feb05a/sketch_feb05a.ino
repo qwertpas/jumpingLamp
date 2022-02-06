@@ -1,32 +1,31 @@
-#include <Tlv493d.h>
-#include <PWMServo.h>
+#include <SimpleFOC.h>
 
-
-// Tlv493d Opject
-Tlv493d Tlv493dMagnetic3DSensor = Tlv493d();
-
-PWMServo esc;
+// MagneticSensorI2C(uint8_t _chip_address, float _cpr, uint8_t _angle_register_msb)
+//  chip_address         - I2C chip address
+//  bit_resolution       - resolution of the sensor
+//  angle_register_msb   - angle read register msb
+//  bits_used_msb        - number of used bits in msb register
+MagneticSensorI2C tlv = MagneticSensorI2C(0x36, 12, 0x0E, 4);
+// or quick config
+MagneticSensorI2C tlv = MagneticSensorI2C(AS5600_I2C);
 
 void setup() {
-  Serial.begin(9600);
-  while(!Serial);
-  Tlv493dMagnetic3DSensor.begin();
-  Tlv493dMagnetic3DSensor.setAccessMode(Tlv493dMagnetic3DSensor.MASTERCONTROLLEDMODE);
-  Tlv493dMagnetic3DSensor.disableTemp();
+  // monitoring port
+  Serial.begin(115200);
 
-  esc.attach(12, 1000, 2000);
-  esc.write(90);
+  // init magnetic sensor hardware
+  as5600.init();
+
+  Serial.println("AS5600 ready");
+  _delay(1000);
 }
 
 void loop() {
-  delay(Tlv493dMagnetic3DSensor.getMeasurementDelay());
-  Tlv493dMagnetic3DSensor.updateData();
-
-  esc.write(0);
-
-//  Serial.print(Tlv493dMagnetic3DSensor.getAmount());
-//  Serial.print(" ; ");
-//  Serial.print(Tlv493dMagnetic3DSensor.getAzimuth());
-//  Serial.print(" ; ");
-  Serial.println(180/3.14 * Tlv493dMagnetic3DSensor.getPolar());
+  // IMPORTANT - call as frequently as possible
+  // update the sensor values 
+  sensor.update();
+  // display the angle and the angular velocity to the terminal
+  Serial.print(as5600.getAngle());
+  Serial.print("\t");
+  Serial.println(as5600.getVelocity());
 }

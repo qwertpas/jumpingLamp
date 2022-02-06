@@ -61,18 +61,18 @@ void setup() {
 
 void loop() {
 
-//  driver.setPwm(0.5, 0.5,0.5);
+//  driver.setPwm(0.5, 0.5, 0.5);
 
-  analogWrite(3, 140);
+  analogWrite(13, 140);
 
-//  // iterative setting FOC phase voltage
-//  motor.loopFOC();
-//
-//  // iterative function setting the outter loop target
-//  motor.move();
-//
-//  // user communication
-//  command.run();
+  // iterative setting FOC phase voltage
+  motor.loopFOC();
+
+  // iterative function setting the outter loop target
+  motor.move();
+
+  // user communication
+  command.run();
 
   
 //  // IMPORTANT - call as frequently as possible
