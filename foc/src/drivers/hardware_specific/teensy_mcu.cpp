@@ -174,11 +174,63 @@ void _writeDutyCycle4PWM(float dc_1a,  float dc_1b, float dc_2a, float dc_2b, in
 
 
 
-// function setting the
+// 6pwm BLDC below
+
+
+
+
+
+// function configuring pair of high-low side pwm channels, 32khz frequency and center aligned pwm
+int _configureComplementaryPair(int pinH, int pinL) {
+  if( (pinH == 5 && pinL == 6 ) || (pinH == 6 && pinL == 5 ) ){
+    // configure the pwm phase-corrected mode
+    TCCR0A = ((TCCR0A & 0b11111100) | 0x01);
+    // configure complementary pwm on low side
+    if(pinH == 6 ) TCCR0A = 0b10110000 | (TCCR0A & 0b00001111) ;
+    else TCCR0A = 0b11100000 | (TCCR0A & 0b00001111) ;
+    // set prescaler to 1 - 32kHz freq
+    TCCR0B = ((TCCR0B & 0b11110000) | 0x01);
+  }else if( (pinH == 9 && pinL == 10 ) || (pinH == 10 && pinL == 9 ) ){
+    // set prescaler to 1 - 32kHz freq
+    TCCR1B = ((TCCR1B & 0b11111000) | 0x01);
+    // configure complementary pwm on low side
+    if(pinH == 9 ) TCCR1A = 0b10110000 | (TCCR1A & 0b00001111) ;
+    else TCCR1A = 0b11100000 | (TCCR1A & 0b00001111) ;
+  }else if((pinH == 3 && pinL == 11 ) || (pinH == 11 && pinL == 3 ) ){
+    // set prescaler to 1 - 32kHz freq
+    TCCR2B = ((TCCR2B & 0b11111000) | 0x01);
+    // configure complementary pwm on low side
+    if(pinH == 11 ) TCCR2A = 0b10110000 | (TCCR2A & 0b00001111) ;
+    else TCCR2A = 0b11100000 | (TCCR2A & 0b00001111) ;
+  }else{
+    return -1;
+  }
+  return 0;
+}
+
+// Configuring PWM frequency, resolution and alignment
+// - BLDC driver - 6PWM setting
+// - hardware specific - this one written by chris for teensy4.0
+]int _configure6PWM(long pwm_frequency, float dead_zone, const int pinA_h, const int pinA_l,  const int pinB_h, const int pinB_l, const int pinC_h, const int pinC_l) {
+  _UNUSED(pwm_frequency);
+  _UNUSED(dead_zone);
+  //  High PWM frequency
+  // - always max 32kHz
+  int ret_flag = 0;
+  ret_flag += _configureComplementaryPair(pinA_h, pinA_l);
+  ret_flag += _configureComplementaryPair(pinB_h, pinB_l);
+  ret_flag += _configureComplementaryPair(pinC_h, pinC_l);
+  return ret_flag; // returns -1 if not well configured
+}
+
+
+
+
+// function setting the pwm duty cycle
 void _setPwmPair(int pinH, int pinL, float val, int dead_time)
 {
-  int pwm_h = _constrain(val-dead_time/2,0,255);
-  int pwm_l = _constrain(val+dead_time/2,0,255);
+  int pwm_h = _constrain(val - dead_time/2, 0, 255);
+  int pwm_l = _constrain(val + dead_time/2, 0, 255);
 
   analogWrite(pinH, pwm_h);
   if(pwm_l == 255 || pwm_l == 0)

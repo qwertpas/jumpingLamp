@@ -159,7 +159,7 @@ void loop() {
       if(currentMillis % 500 < 250){
         servoPos = 180;
       }else{
-        servoPos = 90;
+        servoPos = 0;
       }
 
       esc.write(45);

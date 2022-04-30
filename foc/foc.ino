@@ -6,6 +6,7 @@
 Tlv493d Tlv493dMagnetic3DSensor = Tlv493d();
 void initMySensorCallback(){
     Tlv493dMagnetic3DSensor.begin();
+
 }
 
 float readMySensorCallback(){
@@ -29,6 +30,9 @@ void setup() {
   sensor.init();
   // link the motor to the sensor
   motor.linkSensor(&sensor);
+
+  FLEXPWM4_SM2VAL4 = 0xFF;
+
 
   // driver config
   // power supply voltage [V]
@@ -56,7 +60,7 @@ void setup() {
 
   _delay(1000);
 
-  Serial.println("131");
+  Serial.println("done setup");
 }
 
 void loop() {
