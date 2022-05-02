@@ -221,24 +221,24 @@ void setup() {
   SPI.transfer(0x07); //CRC checking just this once
 
 
-
+  
 
   digitalWrite(PMUXA2, LOW); 
   digitalWrite(PMUXA1, LOW); 
   digitalWrite(PMUXA0, LOW);
-
-
-  digitalWrite(PMUXA2, LOW); 
-  digitalWrite(PMUXA1, LOW); 
-  digitalWrite(PMUXA0, HIGH);
+//
+//
+//  digitalWrite(PMUXA2, LOW); 
+//  digitalWrite(PMUXA1, LOW); 
+//  digitalWrite(PMUXA0, HIGH);
     // set to continuous conversion: 
-  SPI.transfer(writeReg | 0x00);
-  SPI.transfer(0x00);
-  SPI.transfer(0x20); //set bit 5 to 1
-  SPI.transfer(0x00);
-  digitalWrite(PMUXA2, LOW); 
-  digitalWrite(PMUXA1, LOW); 
-  digitalWrite(PMUXA0, LOW);
+//  SPI.transfer(writeReg | 0x00);
+//  SPI.transfer(0x00);
+//  SPI.transfer(0x20); //set bit 5 to 1
+//  SPI.transfer(0x00);
+//  digitalWrite(PMUXA2, LOW); 
+//  digitalWrite(PMUXA1, LOW); 
+//  digitalWrite(PMUXA0, LOW);
 
   initTMAG5170_forEval();
 
@@ -330,41 +330,39 @@ void sndSPI(){
 void initTMAG5170_forEval()
 {
   unsigned int data;
-  for (byte offset = 0x0; offset < 0x15; offset++)
-  {
-    switch (offset)
-    {
+  for (byte address = 0x0; address < 0x15; address++){
+    switch (address){
     case DEVICE_CONFIG:
       data = CONV_AVG_16x | MAG_TEMPCO_0pd | OPERATING_MODE_ConfigurationMode | T_CH_EN_TempChannelEnabled | T_RATE_sameAsOtherSensors | T_HLT_EN_tempLimitCheckOff | TEMP_COMP_EN_TempCompensationDisenabled;
-      sendBuffer[0] = writeReg | offset;
+      sendBuffer[0] = writeReg | address;
       sendBuffer[1] = (byte)(data >> 8);
       sendBuffer[2] = (byte)(data & 0x00ff);
       sndSPI();
       break;
     case SENSOR_CONFIG:
       data = ANGLE_EN_Y_Z | SLEEPTIME_1ms | MAG_CH_EN_XYZYXenaled | Z_RANGE_25mT | Y_RANGE_25mT | X_RANGE_25mT;
-      sendBuffer[0] = writeReg | offset;
+      sendBuffer[0] = writeReg | address;
       sendBuffer[1] = (byte)(data >> 8);
       sendBuffer[2] = (byte)(data & 0x00ff);
       sndSPI();
       break;
     case SYSTEM_CONFIG:
       data = DIAG_SEL_AllDataPath | TRIGGER_MODE_SPI | DATA_TYPE_32bit | DIAG_EN_AFEdiagnosticsDisabled | Z_HLT_EN_ZaxisLimitCheckoff | Y_HLT_EN_YaxisLimitCheckoff | X_HLT_EN_XaxisLimitCheckoff;
-      sendBuffer[0] = writeReg | offset;
+      sendBuffer[0] = writeReg | address;
       sendBuffer[1] = (byte)(data >> 8);
       sendBuffer[2] = (byte)(data & 0x00ff);
       sndSPI();
       break;
     case TEST_CONFIG:
       data = CRC_DIS_CRCdisabled;
-      sendBuffer[0] = writeReg | offset;
+      sendBuffer[0] = writeReg | address;
       sendBuffer[1] = (byte)(data >> 8);
       sendBuffer[2] = (byte)(data & 0x00ff);
       sndSPI();
       break;
     case MAG_GAIN_CONFIG:
       data = GAIN_SELECTION_noAxisSelected;
-      sendBuffer[0] = writeReg | offset;
+      sendBuffer[0] = writeReg | address;
       sendBuffer[1] = (byte)(data >> 8);
       sendBuffer[2] = (byte)(data & 0x00ff);
       sndSPI();
@@ -376,21 +374,11 @@ void initTMAG5170_forEval()
   regConfig(writeReg, DEVICE_CONFIG, DeviceStart);
 }
 
-void regConfig(unsigned char RW, unsigned char offset, unsigned int data)
-{
-  sendBuffer[3] = 0x0f;
-  sendBuffer[0] = RW | offset;
-  putSndData(data);
-  sndSPI();
-//  status_X = getFieldData(rcvBuffer[0], 3, 1);
-//  status_Y = getFieldData(rcvBuffer[0], 2, 1);
-//  status_Z = getFieldData(rcvBuffer[0], 1, 1);
-//  status_T = getFieldData(rcvBuffer[0], 0, 1);
-}
-
-void putSndData(unsigned int data)
-{
-
+void regConfig(unsigned char RW, unsigned char address, unsigned int data){
+  sendBuffer[0] = RW | address;
   sendBuffer[1] = (unsigned char)(data >> 8);
   sendBuffer[2] = (unsigned char)(data & 0x00ff);
+  sendBuffer[3] = 0x0F;
+
+  sndSPI();
 }
