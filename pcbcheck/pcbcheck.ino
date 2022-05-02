@@ -209,12 +209,22 @@ void setup() {
 
 void loop() {
 
-  Serial.println("");
-  printReg(ANGLE_RESULT);
-  printReg(MAGNITUDE_RESULT);
 
+  Serial.println(readAngle());
+  
   delay(50);
 }
+
+
+float readAngle(){
+  regSend(readReg, ANGLE_RESULT, 0x0);
+  int ret = (unsigned int)rcvBuffer[1] << 8 | (unsigned int)rcvBuffer[2];
+
+  //ret[12:4] has degrees, ret[3:0] has degrees/16
+  return ((ret & 0x1FF0) >> 4) + (ret & 0x000F)/16.;
+}
+
+
 
 
 void printReg(unsigned char address){
