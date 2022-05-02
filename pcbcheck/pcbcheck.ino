@@ -204,41 +204,127 @@ uint8_t sendBuffer[4]= {0x0F, 0x00, 0x04, 0x00};
 
 
 void setup() {
-  // put your setup code here, to run once:
-//  pinMode(13, OUTPUT);
   pinMode(2, OUTPUT);
   pinMode(3, OUTPUT);
   pinMode(4, OUTPUT);
 
-
-
   SPI.begin();
+  digitalWrite(PMUXA2, LOW); 
+  digitalWrite(PMUXA1, LOW); 
+  digitalWrite(PMUXA0, HIGH);
+
+
+//  SPI.transfer(0x 0F 00 04 07); //writes to register 0x0F to disable CRC checking
+  SPI.transfer(writeReg | 0x0F);
+  SPI.transfer(0x00);
+  SPI.transfer(0x04);
+  SPI.transfer(0x07); //CRC checking just this once
+
+
+
+
+  digitalWrite(PMUXA2, LOW); 
+  digitalWrite(PMUXA1, LOW); 
+  digitalWrite(PMUXA0, LOW);
+
+
+  digitalWrite(PMUXA2, LOW); 
+  digitalWrite(PMUXA1, LOW); 
+  digitalWrite(PMUXA0, HIGH);
+    // set to continuous conversion: 
+  SPI.transfer(writeReg | 0x00);
+  SPI.transfer(0x00);
+  SPI.transfer(0x20); //set bit 5 to 1
+  SPI.transfer(0x00);
+  digitalWrite(PMUXA2, LOW); 
+  digitalWrite(PMUXA1, LOW); 
+  digitalWrite(PMUXA0, LOW);
+
+  initTMAG5170_forEval();
+
+
+
+//  SPI.transfer(0x0F000407); //writes to register 0x0F to disable CRC checking
+
+
+
+// 1110 0000 0000 0000 0000 0000 1000 1011
+
+// 1110 0000 0000 0000 0000 0000 1000 1010
+
+
+// 1110 0000 0000 0000 0000 0000 1000 1011
+
+// 1110 0000 0000 0000 0100 0000 1000 0011
+
+// 110 0000 0111 1101 1000 0011 1000 0110
+//          0111 1101 1000 0011
+// 110 0000 0111 1101 1000 0011 1000 0110
+
+//reg 0x00
+// 0110 0000 0100 0000 0000 1000 1000 0011
+
+//reg 0x07
+// 0100 0000 0110 0111 0011 0010 0000 1001
+//           0110 0111 0011 0010
+
+//reg 0x06
+// 0100 0000 0111 1101 1000 0011 0000 0000
+//           0111 1101 1000 0011
+
+//reg 0x0F
+// 0100 0000 0000 0000 0101 0100 0000 1001
+
+
+
 }
 
 void loop() {
 
-//  digitalWrite(13, HIGH);
+  Serial.println("");
+  Serial.println("------------------- F E D C B A 9 8 7 6 5 4 3 2 1 0 ---------------");
+  for(int i=0; i<=0x14; i++){
+      printReg(i);
+  }
+
+  delay(50);
+}
+
+void print32(unsigned long val){
+  for(int i=31; i>=0; i--){
+    Serial.print(bitRead(val, i));
+    Serial.print(" ");
+  }
+  Serial.println("");
+}
+
+void printReg(unsigned char address){
+  if(address < 0x10){Serial.print(" ");}
+  Serial.print(address, HEX);
+  Serial.print(": ");
   digitalWrite(PMUXA2, LOW); 
   digitalWrite(PMUXA1, LOW); 
-  digitalWrite(PMUXA0, HIGH); 
-  Serial.println("HIGH ——————");
-//  initTMAG5170_forEval();
-  SPI.transfer(0x0F000407);
-  for (int i = 0; i < 4; i++){
-    rcvBuffer[i] = SPI.transfer(sendBuffer[i]);
-//    Serial.println(sendBuffer[i]);
-    Serial.println(rcvBuffer[i], BIN);
-  }
-  delay(1000);
+  digitalWrite(PMUXA0, HIGH);
+  regConfig(readReg, address, 0x0);
+  digitalWrite(PMUXA2, LOW); 
+  digitalWrite(PMUXA1, LOW); 
+  digitalWrite(PMUXA0, LOW);
+  unsigned long ret = (unsigned int)rcvBuffer[0] << 24 | (unsigned int)rcvBuffer[1] << 16 | (unsigned int)rcvBuffer[2] << 8 | (unsigned int)rcvBuffer[3];
+  print32(ret);
 }
 
 
-void sndSPI()
-{
+void sndSPI(){
+  digitalWrite(PMUXA2, LOW); 
+  digitalWrite(PMUXA1, LOW); 
+  digitalWrite(PMUXA0, HIGH);
   for (int i = 0; i < 4; i++)
   {
     rcvBuffer[i] = SPI.transfer(sendBuffer[i]);
   }
+  digitalWrite(PMUXA2, HIGH); 
+  digitalWrite(PMUXA1, LOW); 
+  digitalWrite(PMUXA0, LOW);
 }
 
 void initTMAG5170_forEval()
