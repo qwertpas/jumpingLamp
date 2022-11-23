@@ -5,73 +5,202 @@
 #define PMUXA1 3
 #define PMUXA0 2
 
-#define readReg 0x80
-#define writeReg 0x00
+//the following are for FPC 1 (motor 1)
+#define PWMA 10
+#define PWMB 9
+#define PWMC 8
 
-uint8_t rcvBuffer[2];
-uint8_t sendBuffer[2]= {0x00, 0x00};
+#define CSOA 14     //current sense analog in
+#define SNS_SEL1 19 //current sense mux selection
+#define SNS_SEL2 20 //current sense mux selection
+
+#define READ  0x8000  //1 in MSB
+#define WRITE 0x0000  //0 in MSB
+
+//16bit SPI, buf used for both send and receive
+uint16_t buf = 0;
+
+void selectRAA(){
+  //selects MUX0 which goes to CS_DRV1
+  digitalWrite(PMUXA2, LOW); 
+  digitalWrite(PMUXA1, LOW); 
+  digitalWrite(PMUXA0, LOW);
+}
+
+void deselectRAA(){
+  //selects MUX4 which is unused
+  digitalWrite(PMUXA2, HIGH); 
+  digitalWrite(PMUXA1, LOW); 
+  digitalWrite(PMUXA0, LOW);
+}
+
+uint16_t regRead(unsigned char reg_addr){
+  //bit 15: 1 for read, bits 14-12: register address, bits 11-0: don't care
+  buf = READ | ((reg_addr & 0b111) << 12);
+  selectRAA();
+  buf = SPI.transfer16(buf);
+  deselectRAA();
+  return buf;
+}
+
+void regWrite(unsigned char reg_addr, uint16_t data){
+  //bit 15: 0 for write, bits 14-12: register address, bits 11-0: data
+  buf = WRITE | ((reg_addr & 0b111) << 12) | (data & 0x0FFF);
+  selectRAA();
+  buf = SPI.transfer16(buf);
+  deselectRAA();
+}
+
+void regPrint(unsigned char reg_addr){
+  Serial.print("Reg ");
+  Serial.print(reg_addr, HEX);
+  Serial.print(": \n");
+  
+  int16_t ret = regRead(reg_addr);
+  for(int i=15; i>=0; i--){
+    Serial.print(bitRead(ret, i));
+    if(i % 4 == 0){
+      Serial.print(" ");
+    }
+  }
+  Serial.print("\n");
+}
+
+
+
+
+/*
+Config registers default:
+Reg 0x2: 0011 1010 0100
+Reg 0x3: 0010 0101 0000
+Reg 0x4: 1011 0000 0010
+Reg 0x5: 0111 1111 1100
+
+We want 3 phase PWM mode so each phase is only controlled by 1 pin (LIx)
+PWM_MODE = 1b;
+
+Current sense mode 5:
+DT/IFSEL/BEN = tied to VCC (hardwired)
+BEMF_EN = 0b;
+CS_MODE = 0b;
+CS_SH_EN = 1b;
+
+Clear fault:
+CLR_FLT = 1b; 
+
+Config registers with the settings:
+Reg 0x2: 1011 1011 0101
+Reg 0x3: 0010 0101 0000
+Reg 0x4: 1011 0000 0010
+Reg 0x5: 0111 1111 1100
+*/
+
+void initRAA(){
+  regWrite(0x2, 0b101110111101);
+  regWrite(0x3, 0b110000010000);
+  regWrite(0x4, 0b101101110010);
+  regWrite(0x5, 0b010000000000);
+}
+
+void disableMotors(){
+  regWrite(0x2, 0b101110101101); //enter HI/LO mode instead of PWM mode
+
+  //force PWMs high so the phases enter high impedance 
+  analogWrite(PWMA, 0);
+  analogWrite(PWMB, 0);
+  analogWrite(PWMC, 0);
+}
 
 void setup() {
   pinMode(PMUXA2, OUTPUT); 
   pinMode(PMUXA1, OUTPUT); 
   pinMode(PMUXA0, OUTPUT); 
 
-  SPI.begin();
-//  delay(1000);
-  // put your setup code here, to run once:
-//  regSend(readReg, 0x05, 0b111001100111);
-//  Serial.println(sendBuffer[0], BIN);
-//  Serial.println(sendBuffer[1], BIN);
+  pinMode(PWMA, OUTPUT);
+  pinMode(PWMB, OUTPUT);
+  pinMode(PWMC, OUTPUT);
 
+  analogWriteFrequency(PWMA, 32226);
+  analogWriteFrequency(PWMB, 32226);
+  analogWriteFrequency(PWMC, 32226);
+  analogWriteResolution(12); // analogWrite value 0 to 4095, or 4096 for high
+
+  pinMode(CSOA, INPUT);
+  pinMode(SNS_SEL1, OUTPUT);
+  pinMode(SNS_SEL2, OUTPUT);
+
+  SPI.begin();
+  SPI.beginTransaction(SPISettings(140000, MSBFIRST, SPI_MODE1));
+
+  delay(100);
+  
+  
+  initRAA();
 }
+
+int valB = 0;
+int dir = 1;
 
 void loop() {
-  // put your main code here, to run repeatedly:
-//  for(int i=0; i<=5; i++){
-//      printReg(i);
-//  }
+
+
+  //type anything in serial monitor to toggle pause/resume
+  if (Serial.available()) {
+    disableMotors();
+    Serial.println("pause");
+    while(Serial.available()){ //clear buffer
+      Serial.read();
+    }
+    while(!Serial.available()){} //wait until next input
+    while(Serial.available()){ //clear buffer
+      Serial.read();
+    }
+    Serial.println("resume");
+  }
+  
+  initRAA();
+
+
+  for(int i=0; i < 6; i++){
+    regPrint(i);
+  }
+
+  analogWrite(PWMA, (valB+2*85)%256);
+  analogWrite(PWMB, valB);
+  analogWrite(PWMC, (valB+85)%256);
+  valB = valB + dir;
+  if(valB % 255 == 0){
+    dir = dir*-1;
+  }
+
+
+  delay(10);
+
+
+//  digitalWrite(SNS_SEL1, LOW);
+//  digitalWrite(SNS_SEL2, HIGH);
+//  delay(2);
+//  Serial.print("A: ");
+//  Serial.print(analogRead(CSOA));
+//  Serial.print(", ");
+//
+//
+//  digitalWrite(SNS_SEL1, HIGH);
+//  digitalWrite(SNS_SEL2, LOW);
+//  delay(4);
+//  Serial.print("B: ");
+//  Serial.print(analogRead(CSOA));
+//  Serial.print(", ");
+//
+//  digitalWrite(SNS_SEL1, HIGH);
+//  digitalWrite(SNS_SEL2, HIGH);
+//  delay(6);
+//  Serial.print("C: ");
+//  Serial.print(analogRead(CSOA));
+//  Serial.print(", ");
+//
+//  Serial.println("\n");
 
   
-  digitalWrite(PMUXA2, LOW); 
-  digitalWrite(PMUXA1, LOW); 
-  digitalWrite(PMUXA0, LOW);
-////  delay(1);
-//  uint8_t ret = SPI.transfer(0b101000000000000);
-  Serial.println(SPI.transfer(0b10010100));
-  Serial.println(SPI.transfer(0b00000000));
-////  delay(1);
-  digitalWrite(PMUXA2, HIGH); 
-  digitalWrite(PMUXA1, LOW); 
-  digitalWrite(PMUXA0, LOW);
-//  uint8_t ret = ;
-
-  delay(50);
-}
-
-void printReg(unsigned char address){
-  Serial.print(address, HEX);
-  Serial.print(": ");
-  regSend(readReg, address, 0x0);
-  unsigned long ret = (unsigned int)rcvBuffer[0] << 8 | (unsigned int)rcvBuffer[1];
-  for(int i=15; i>=0; i--){
-    Serial.print(bitRead(ret, i));
-    Serial.print(" ");
-  }
-  Serial.println("");
-}
-
-
-void regSend(unsigned char RW, unsigned char address, unsigned int data){
-  sendBuffer[0] = RW | (address << 4) | (data >> 8);
-  sendBuffer[1] = data & 0x00FF;
-
-  digitalWrite(PMUXA2, LOW); 
-  digitalWrite(PMUXA1, LOW); 
-  digitalWrite(PMUXA0, LOW);
-  rcvBuffer[0] = SPI.transfer(sendBuffer[0]);
-  rcvBuffer[1] = SPI.transfer(sendBuffer[1]);
-
-  digitalWrite(PMUXA2, HIGH); //selects mux4 which is unused
-  digitalWrite(PMUXA1, LOW); 
-  digitalWrite(PMUXA0, LOW);
+  
 }
