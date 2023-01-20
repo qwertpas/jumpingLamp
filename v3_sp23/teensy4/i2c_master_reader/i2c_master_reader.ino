@@ -18,6 +18,8 @@ char i2c_buf[32];
 char temp[4];
 int values[4];
 
+char uart_buf[128];
+
 void loop()
 {
   digitalWrite(led, HIGH);
@@ -49,34 +51,38 @@ void loop()
 //  Serial.println("");
 
   if(Serial1.available()) {
-    char uart_buf[32];
-    for(int i=0; Serial1.available() && i < sizeof(uart_buf); i++){
-      uart_buf[i] = Serial1.read();
+    for(int i=0; i < sizeof(uart_buf); i++){
+      if(Serial1.available()){
+        uart_buf[i] = Serial1.read();
+      }else{
+        uart_buf[i] = 0;
+      }
+      if(uart_buf[i] == '\n') break;
     }
-    while(Serial1.available()){
-      Serial1.read();
-    }
-    Serial.println(uart_buf);
+//    while(Serial1.available()){
+//      Serial1.read();
+//    }
+    Serial.print(uart_buf);
   }
   
 
   
 
   //I2C: send 2 bytes of data to the STM32 then receive 2 bytes back
-  Wire.beginTransmission(9);  // transmit to device #9
-  Wire.write(0xA1);            //send 2 bytes
-  Wire.write(0xB1);        
-  Wire.endTransmission(false);     // stop transmitting data but don't end the entire interaction
-  Wire.requestFrom(9, 2);   // request 2 bytes from peripheral device #9
-  for(int i=0; Wire.available() && i < sizeof(i2c_buf); i++) {
-    i2c_buf[i] = Wire.read();   // receive a byte as character
+//  Wire.beginTransmission(9);  // transmit to device #9
+//  Wire.write(0xA1);            //send 2 bytes
+//  Wire.write(0xB1);        
+//  Wire.endTransmission(false);     // stop transmitting data but don't end the entire interaction
+//  Wire.requestFrom(9, 2);   // request 2 bytes from peripheral device #9
+//  for(int i=0; Wire.available() && i < sizeof(i2c_buf); i++) {
+//    i2c_buf[i] = Wire.read();   // receive a byte as character
 //    Serial.print(i2c_buf[i], HEX);
 //    Serial.print(" ");    
-  }
+//  }
 //  Serial.println("\n");
   
 
   digitalWrite(led, LOW);
 
-  delay(10);
+  delay(0);
 }
