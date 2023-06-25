@@ -11,78 +11,98 @@ void setup()
   Wire.begin();             // join i2c bus (address optional for master)
   Serial.begin(115200);       // start serial for serial monitor output (println)
   Serial1.begin(115200);      // start serial for input from the STM32
+
+  delay(500);
+  digitalWrite(led, HIGH);
 }
 
-char i2c_buf[32];
 
-char temp[4];
-int values[4];
+uint8_t i2c_TX[2] = {1,1}; //out to stm32
 
-char uart_buf[128];
+int count = 0;
 
 void loop()
 {
-  digitalWrite(led, HIGH);
+  char uart0_RX[128] = {0}; //in from usb
+  char uart1_RX[128] = {0}; //in from stm32
+  uint8_t i2c_RX[2] = {0}; //in from stm32
 
+  int transmit_i2c = 0;
 
-  //UART: read and print the Serial coming from the STM32
-//  if(Serial1.available()) {
-//    for(int i=0; Serial1.available() && i < sizeof(uart_buf); i++){
-//      uart_buf[i] = Serial1.read();
-//    }
-//    Serial.print(uart_buf);
-//  }
-//
-//  strncpy(temp, &uart_buf[5], 4);   // Could be put in a loop...
-//  values[0] = atoi(temp);
-//  strncpy(temp, &uart_buf[10], 4);
-//  values[1] = atoi(temp);
-//  strncpy(temp, &uart_buf[15], 4);
-//  values[2] = atoi(temp);
-//  strncpy(temp, &uart_buf[20], 4);
-//  values[3] = atoi(temp);
-
-  
-//  for(int i=0; i<4; i++){
-//    if(values[i] < 4096){
-//      Serial.print(String(i) + ": " + String(values[i]) + ", ");
-//    }
-//  }
-//  Serial.println("");
-
-  if(Serial1.available()) {
-    for(int i=0; i < sizeof(uart_buf); i++){
-      if(Serial1.available()){
-        uart_buf[i] = Serial1.read();
-      }else{
-        uart_buf[i] = 0;
+  //USB serial input
+  if(Serial.available()) {
+    for(int i=0; i < sizeof(uart0_RX); i++){
+      if(Serial.available()){
+        uart0_RX[i] = Serial.read();
       }
-      if(uart_buf[i] == '\n') break;
+      if(uart0_RX[i] == '\n') break;
     }
-//    while(Serial1.available()){
-//      Serial1.read();
-//    }
-    Serial.print(uart_buf);
+    Serial.print(uart0_RX);
+
+    if(uart0_RX[0] == 'p'){
+      i2c_TX[0] = (int)(uart0_RX[1] - '0');
+      transmit_i2c = 1;
+    }
   }
-  
+    
+    
+  //UART1 receive all or until buffer filled
+  int printall = 0;
+  if(Serial1.available()) {
+    for(int i=0; i < sizeof(uart1_RX); i++){
+      if(Serial1.available()){
+        uart1_RX[i] = Serial1.read();
+      }else{
+        break;
+      }
+    }
+    
+    //print to usb
+    if(printall){
+      Serial.print(uart1_RX);
+    }else{
+      int start_i = -1;
+      for(int i=0; i < sizeof(uart1_RX); i++){
+        if(uart1_RX[i] == '\n'){
+          if(start_i == -1){
+            start_i = i; //found the first newline
+          }else{
+            Serial.print('\n'); //found the second newline
+            break;
+          }
+        }else if(start_i != -1){ //first newline has been found
+          Serial.print(uart1_RX[i]);
+        }
+      }
+    }
+  }
 
-  
 
-  //I2C: send 2 bytes of data to the STM32 then receive 2 bytes back
-//  Wire.beginTransmission(9);  // transmit to device #9
-//  Wire.write(0xA1);            //send 2 bytes
-//  Wire.write(0xB1);        
-//  Wire.endTransmission(false);     // stop transmitting data but don't end the entire interaction
-//  Wire.requestFrom(9, 2);   // request 2 bytes from peripheral device #9
-//  for(int i=0; Wire.available() && i < sizeof(i2c_buf); i++) {
-//    i2c_buf[i] = Wire.read();   // receive a byte as character
-//    Serial.print(i2c_buf[i], HEX);
-//    Serial.print(" ");    
-//  }
-//  Serial.println("\n");
-  
+  if (transmit_i2c){
+    //  //I2C: send 2 bytes of data to the STM32 then receive 2 bytes back
+    Wire.beginTransmission(9);  // transmit to device #9
+    Wire.write(i2c_TX[0]);            //send 2 bytes
+    Wire.write(i2c_TX[1]);
+    Wire.endTransmission(false);     // stop transmitting data but don't end the entire interaction
+    Wire.requestFrom(9, 2);   // request 2 bytes from peripheral device #9
+    for(int i=0; Wire.available(); i++) {
+      char temp = Wire.read();
+      Serial.println(temp, HEX);
+      if(i < sizeof(i2c_RX)){
+        i2c_RX[i] = temp;
+      }
+    }
+    Serial.print("Sent: ");
+    Serial.print(i2c_TX[0], HEX);
+    Serial.print(" ");
+    Serial.println(i2c_TX[1], HEX);
+    Serial.print("Recv: ");
+    Serial.print(i2c_RX[0], HEX);
+    Serial.print(" ");
+    Serial.println(i2c_RX[1], HEX);
+  }
 
-  digitalWrite(led, LOW);
+  delay(100);
+  count++;
 
-  delay(0);
 }
