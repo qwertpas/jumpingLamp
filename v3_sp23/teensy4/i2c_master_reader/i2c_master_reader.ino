@@ -39,8 +39,9 @@ void loop()
     }
     Serial.print(uart0_RX);
 
-    if(uart0_RX[0] == 'p'){
-      i2c_TX[0] = (int)(uart0_RX[1] - '0');
+    int num = (int)(uart0_RX[0] - '0');
+    if(num >= 0 && num <= 9){
+      i2c_TX[0] = num;
       transmit_i2c = 1;
     }
   }
@@ -87,19 +88,18 @@ void loop()
     Wire.requestFrom(9, 2);   // request 2 bytes from peripheral device #9
     for(int i=0; Wire.available(); i++) {
       char temp = Wire.read();
-      Serial.println(temp, HEX);
       if(i < sizeof(i2c_RX)){
         i2c_RX[i] = temp;
       }
     }
-    Serial.print("Sent: ");
-    Serial.print(i2c_TX[0], HEX);
-    Serial.print(" ");
-    Serial.println(i2c_TX[1], HEX);
-    Serial.print("Recv: ");
-    Serial.print(i2c_RX[0], HEX);
-    Serial.print(" ");
-    Serial.println(i2c_RX[1], HEX);
+//    Serial.print("Sent: ");
+//    Serial.print(i2c_TX[0], HEX);
+//    Serial.print(" ");
+//    Serial.println(i2c_TX[1], HEX);
+//    Serial.print("Recv: ");
+//    Serial.print(i2c_RX[0], HEX);
+//    Serial.print(" ");
+//    Serial.println(i2c_RX[1], HEX);
   }
 
   delay(100);
