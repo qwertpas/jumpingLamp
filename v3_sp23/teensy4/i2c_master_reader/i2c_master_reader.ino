@@ -23,8 +23,8 @@ int count = 0;
 
 void loop()
 {
-  char uart0_RX[128] = {0}; //in from usb
-  char uart1_RX[128] = {0}; //in from stm32
+  char uart0_RX[2048] = {0}; //in from usb
+  char uart1_RX[2048] = {0}; //in from stm32
   uint8_t i2c_RX[2] = {0}; //in from stm32
 
   int transmit_i2c = 0;
@@ -37,7 +37,7 @@ void loop()
       }
       if(uart0_RX[i] == '\n') break;
     }
-    Serial.print(uart0_RX);
+    Serial.println(uart0_RX);
 
     int num = (int)(uart0_RX[0] - '0');
     if(num >= 0 && num <= 9){
@@ -48,7 +48,7 @@ void loop()
     
     
   //UART1 receive all or until buffer filled
-  int printall = 0;
+  int printall = 1;
   if(Serial1.available()) {
     for(int i=0; i < sizeof(uart1_RX); i++){
       if(Serial1.available()){
@@ -85,6 +85,7 @@ void loop()
     Wire.write(i2c_TX[0]);            //send 2 bytes
     Wire.write(i2c_TX[1]);
     Wire.endTransmission(false);     // stop transmitting data but don't end the entire interaction
+//    delay(1);
     Wire.requestFrom(9, 2);   // request 2 bytes from peripheral device #9
     for(int i=0; Wire.available(); i++) {
       char temp = Wire.read();
@@ -102,7 +103,8 @@ void loop()
 //    Serial.println(i2c_RX[1], HEX);
   }
 
-  delay(100);
+
+  delay(1);
   count++;
 
 }
