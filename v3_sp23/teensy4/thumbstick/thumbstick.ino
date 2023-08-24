@@ -1,6 +1,7 @@
-// FOR TEENSY4.0. Connect I2C and UART to STSPIN.
+// To connect a Teensy 4.0 to Ø32controller using a hack to interface RS485 without a transceiver.
+// RS485_B of Ø32 goes to a resistor divider between 3.3V and GND of Teensy (1.65V)
+// RS485_A of Ø32 goes to TX of Serial2 on Teensy
 
-#include <Wire.h>
 
 #define STICK_X A0
 #define STICK_Y A1
@@ -14,10 +15,9 @@ void setup()
 {
 
   pinMode(led, OUTPUT);
-  Wire.begin();             // join i2c bus (address optional for master)
   Serial.begin(115200);       // start serial for serial monitor output (println)
   Serial1.begin(115200);      // start serial for input from the STM32
-  Serial2.begin(115200);      // start serial for input from the STM32
+  Serial2.begin(115200);      // start serial for RS485 output 
 
   stick_x_0 = analogRead(STICK_X);
   stick_y_0 = -analogRead(STICK_Y);
@@ -36,19 +36,11 @@ void loop()
 {
   char uart0_RX[2048] = {0}; //in from usb
   char uart1_RX[2048] = {0}; //in from stm32
-  uint8_t i2c_RX[2] = {0}; //in from stm32
 
 
   //Joystick input
   int16_t stick_x = analogRead(STICK_X) - stick_x_0;
   int16_t stick_y = -analogRead(STICK_Y) - stick_y_0; //between -550 and 550
-  if(abs(stick_y) > 61){
-    i2c_TX[0] = abs(stick_y) / 100; //scale to 0-9
-    transmit_i2c = 1;
-//  }else{
-//    i2c_
-  }
-
 
   //USB serial input
   if(Serial.available()) {
@@ -100,34 +92,13 @@ void loop()
   }
 
   if(count % 10 == 0){
-    if (transmit_i2c){
-      //  //I2C: send 2 bytes of data to the STM32 then receive 2 bytes back
-      Wire.beginTransmission(9);  // transmit to device #9
-      Wire.write(i2c_TX[0]);            //send 2 bytes
-      Wire.write(i2c_TX[1]);
-      Wire.endTransmission(false);     // stop transmitting data but don't end the entire interaction
-  //    delay(1);
-      Wire.requestFrom(9, 2);   // request 2 bytes from peripheral device #9
-      for(int i=0; Wire.available(); i++) {
-        char temp = Wire.read();
-        if(i < sizeof(i2c_RX)){
-          i2c_RX[i] = temp;
-        }
-      }
-      transmit_i2c = 0;
-
+    
       Serial2.write(abs(stick_y) >> 2);
-      Serial2.write(0xBB);
+//      Serial2.write(0xBB);
 
       Serial.println(stick_y);
-    }
+    
   }
-
-  
-
-//  Serial2.write(count);
-//  Serial2.write(0xBB);
-//  Serial2.write(count+1);
   
     delay(1);
     count++;
