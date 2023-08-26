@@ -50,14 +50,28 @@ void loop() {
     int16_t stick_y = -analogRead(STICK_Y) - stick_y_0; //between -550 and 550
 
     if(count % 2 == 0){
+      if(count % 4 == 0){
+        uart2_TX[0] = CMD_SET_VOLTAGE | 2;
+      }else{
+        uart2_TX[0] = CMD_SET_SPEED | 2;
+      }
+      uart2_TX[1] = count % 0b01111111;
+      uart2_TX[2] = (count+1) % 0b01111111;
+      Serial2.write(uart2_TX, 3);
+    }else{
       uart2_TX[0] = CMD_SET_VOLTAGE | 3;
       uart2_TX[1] = count % 0b01111111;
-      Serial2.write(uart2_TX, 2);
-    }else{
-      uart2_TX[0] = CMD_SET_VOLTAGE | 4;
-      uart2_TX[1] = count % 0b01111111;
-      Serial2.write(uart2_TX, 2);
+      uart2_TX[2] = (count+1) % 0b01111111;
+      Serial2.write(uart2_TX, 3);
     }
+
+//    uart2_TX[0] = CMD_SET_VOLTAGE | 3;
+//    uart2_TX[1] = count % 0b01111111;
+//    Serial2.write(uart2_TX, 2);
+//
+//    uart2_TX[0] = CMD_SET_VOLTAGE | 4;
+//    uart2_TX[1] = count % 0b01111111;
+//    Serial2.write(uart2_TX, 2);
     
    
     count += 1;
