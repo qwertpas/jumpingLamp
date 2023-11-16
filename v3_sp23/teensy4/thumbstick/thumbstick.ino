@@ -105,7 +105,7 @@ void loop() {
 //    }
 
 
-    int address = 2;
+    int address = 4;
     uart2_TX[0] = CMD_SET_VOLTAGE | address;
     uart2_TX[1] = (stick_y >> 7) & 0b01111111;
     uart2_TX[2] = (stick_y)      & 0b01111111;

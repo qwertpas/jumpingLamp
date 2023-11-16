@@ -56,6 +56,37 @@ int16_t clip(int16_t x, int16_t min, int16_t max) {
   }
 }
 
+uint8_t motor_cmd(uint8_t addr, uint8_t CMD_TYPE, uint16_t data, uint8_t *rx){
+  while(Serial2.available()) Serial2.read(); //clear rx buffer
+
+  uart2_TX[0] = CMD_TYPE | addr;
+  uart2_TX[1] = (data >> 7) & 0b01111111;
+  uart2_TX[2] = (data)      & 0b01111111;
+
+  digitalWrite(RS485_DE, HIGH);
+  Serial2.write(uart2_TX, 3);
+  Serial2.flush();
+//  delayMicroseconds(270);
+
+  digitalWrite(RS485_DE, LOW);
+
+//  delayMicroseconds(700);
+
+  int numread = Serial2.readBytesUntil(MIN_INT8, rx, 10);
+//  for (int i = 0; i < numread; i++) {
+//    Serial.print(i);
+//    Serial.print("rx: ");
+//    Serial.println(uart2_RX[i]);
+//  }
+
+//  delayMicroseconds(700);
+//    while(Serial2.available()) Serial2.read(); //clear rx buffer
+
+  return numread;
+
+  
+}
+
 
 void setup() {
 
@@ -63,7 +94,7 @@ void setup() {
   Serial1.begin(115200);      // start serial for input from the STM32
 
   Serial2.begin(115200);      // start serial for RS485 output
-  Serial2.setTimeout(1);
+//  Serial2.setTimeout(1);
   //  Serial2.begin(230400);      // start serial for RS485 output (not captured by scopy)
 
   stick_x_0 = analogRead(STICK_X);
@@ -86,7 +117,6 @@ int16_t stick_y = 0;
 
 void loop() {
 
-
   stick_y = clip(-analogRead(STICK_Y) - stick_y_0, -511, 511);
   if (stick_y > 100){
     count++;
@@ -94,37 +124,25 @@ void loop() {
     count--;
   }
   int16_t angle_des = count;
-  Serial.print("des: ");
-  Serial.println(angle_des);
+//  Serial.print("des: ");
+//  Serial.println(angle_des);
 
-  int address = 2;
-  uart2_TX[0] = CMD_SET_POSITION | address;
-  uart2_TX[1] = (angle_des >> 7) & 0b01111111;
-  uart2_TX[2] = (angle_des)      & 0b01111111;
-
-  digitalWrite(RS485_DE, HIGH);
-  Serial2.write(uart2_TX, 3);
-//  delayMicroseconds(260);
-  Serial2.flush();
-  digitalWrite(RS485_DE, LOW);
+//  motor_cmd(2, CMD_SET_POSITION, angle_des, uart2_RX);
+//  Serial.print("motor: ");
+//  Serial.println(pad14(uart2_RX[2], uart2_RX[3]));
+//  Serial.print("\t\n");
 
 //  delayMicroseconds(500);
 
-  int numread = Serial2.readBytesUntil(MIN_INT8, uart2_RX, 6);
-  while(Serial2.available()) Serial2.read();
-  Serial.println(numread);
-  for (int i = 0; i < 5; i++) {
-    Serial.print(i);
-    Serial.print("uart:");
-    Serial.println(uart2_RX[i]);
-  }
-
-  //    Serial.print("contdes:");
-  //    Serial.println(pad14(uart2_RX[0], uart2_RX[1]));
-  Serial.print("cont: ");
-  Serial.println(pad14(uart2_RX[0], uart2_RX[1]));
+  motor_cmd(3, CMD_GET_POSITION, 0, uart2_RX);
+  Serial.print("enc: ");
+  Serial.println(pad14(uart2_RX[2], uart2_RX[3]));
+  Serial.println(uart2_RX[0]);
+  Serial.println(uart2_RX[1]);
+  Serial.println(uart2_RX[2]);
+  Serial.println(uart2_RX[3]);
+  Serial.println(uart2_RX[4]);
   Serial.print("\t\n");
-
-  delay(500);
+  delay(200); 
 
 }
