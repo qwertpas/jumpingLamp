@@ -1,5 +1,6 @@
 #include "HX711.h"
 #include "comdef.h"
+#include <ADS1256.h>
 
 #define RS485_DE (9)
 #define MIN_INT8 (0x80) //most negative int8
@@ -7,7 +8,8 @@
 #define LOADCELL_DOUT_PIN 16
 #define LOADCELL_SCK_PIN 17
 
-HX711 scale;
+ADS1256 A(4, 0, 5, 10, 2.500); //DRDY, RESET, SYNC(PDWN), CS, VREF(float).    //Teensy 4.0 mine
+
 float N_per_ct = 0.222e-5 * 9.81;
 float N_zero = 0;
 
